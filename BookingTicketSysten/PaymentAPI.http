@@ -1,0 +1,79 @@
+### Payment API Tests
+
+### Get all payments
+GET {{baseUrl}}/api/payment
+Content-Type: application/json
+
+###
+
+### Get payment by ID
+GET {{baseUrl}}/api/payment/1
+Content-Type: application/json
+
+###
+
+### Get payments by user ID
+GET {{baseUrl}}/api/payment/user/1
+Content-Type: application/json
+
+###
+
+### Get payments by booking ID
+GET {{baseUrl}}/api/payment/booking/1
+Content-Type: application/json
+
+###
+
+### Create a new payment
+POST {{baseUrl}}/api/payment
+Content-Type: application/json
+
+{
+  "bookingId": 1,
+  "amount": 150000,
+  "paymentMethod": "Credit Card",
+  "transactionId": "TXN_20241201_123456"
+}
+
+###
+
+### Update payment status
+PUT {{baseUrl}}/api/payment/1/status
+Content-Type: application/json
+
+{
+  "paymentStatus": "Completed",
+  "transactionId": "TXN_20241201_123456"
+}
+
+###
+
+### Process payment for a booking
+POST {{baseUrl}}/api/payment/process/1
+Content-Type: application/json
+
+{
+  "paymentMethod": "Credit Card"
+}
+
+###
+
+### Validate payment
+POST {{baseUrl}}/api/payment/validate
+Content-Type: application/json
+
+{
+  "paymentId": 1,
+  "transactionId": "TXN_20241201_123456"
+}
+
+###
+
+### Delete payment
+DELETE {{baseUrl}}/api/payment/1
+Content-Type: application/json
+
+###
+
+# Variables
+@baseUrl = https://localhost:7001 

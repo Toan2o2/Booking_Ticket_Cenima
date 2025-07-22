@@ -1,0 +1,78 @@
+.showtimes-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: 8px;
+}
+.showtime-card-mini {
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(60,60,60,0.10);
+  padding: 16px 14px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  min-height: 120px;
+  position: relative;
+  transition: box-shadow 0.18s, transform 0.18s;
+}
+.showtime-card-mini:hover {
+  box-shadow: 0 6px 18px rgba(60,60,60,0.16);
+  transform: translateY(-2px) scale(1.02);
+}
+.showtime-info {
+  margin-bottom: 10px;
+  width: 100%;
+}
+.showtime-datetime {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 2px;
+}
+.showtime-date {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1890ff;
+}
+.showtime-time {
+  font-size: 1rem;
+  color: #1890ff;
+}
+.showtime-hall {
+  font-size: 0.95rem;
+  color: #888;
+  margin-bottom: 2px;
+}
+.showtime-cinema {
+  font-size: 0.95rem;
+  color: #3b3b3b;
+  margin-bottom: 2px;
+}
+.showtime-price {
+  font-size: 1rem;
+  color: #fa541c;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+.showtime-book-btn {
+  background: linear-gradient(90deg, #ff7e5f 0%, #feb47b 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 7px 18px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255,126,95,0.08);
+  transition: background 0.18s, box-shadow 0.18s;
+  margin-top: 4px;
+}
+.showtime-book-btn:hover {
+  background: linear-gradient(90deg, #feb47b 0%, #ff7e5f 100%);
+  box-shadow: 0 4px 16px rgba(255,126,95,0.16);
+} 

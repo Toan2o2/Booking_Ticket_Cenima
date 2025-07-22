@@ -1,0 +1,15 @@
+export { default as movieService } from './movieService';
+export { default as genreService } from './genreService';
+export { default as personService } from './personService';
+export { default as authService } from './auth';
+export { default as commentService } from './commentService';
+export { default as cityService } from './cityService';
+export { default as movieFavoriteService } from './movieFavoriteService';
+export { default as cinemaService } from './cinemaService';
+export { default as cinemaHallService } from './cinemaHallService';
+export { default as showService } from './showService';
+export { default as bookingService } from './bookingService';
+export { default as paymentService } from './paymentService';
+export { default as userService } from './userService';
+export { default as seatService } from './seatService';
+export { default as voteService } from './voteService'; 

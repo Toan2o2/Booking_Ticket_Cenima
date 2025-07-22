@@ -1,0 +1,66 @@
+### City API Tests
+
+### Get all cities
+GET {{baseUrl}}/api/city
+Content-Type: application/json
+
+###
+
+### Get city by ID
+GET {{baseUrl}}/api/city/1
+Content-Type: application/json
+
+###
+
+### Get city by name
+GET {{baseUrl}}/api/city/name/Ho Chi Minh City
+Content-Type: application/json
+
+###
+
+### Search cities
+GET {{baseUrl}}/api/city/search?q=Ho Chi Minh
+Content-Type: application/json
+
+###
+
+### Create a new city
+POST {{baseUrl}}/api/city
+Content-Type: application/json
+
+{
+  "name": "Da Nang"
+}
+
+###
+
+### Update city
+PUT {{baseUrl}}/api/city/1
+Content-Type: application/json
+
+{
+  "name": "Ho Chi Minh City Updated"
+}
+
+###
+
+### Check if city exists
+GET {{baseUrl}}/api/city/1/exists
+Content-Type: application/json
+
+###
+
+### Check if city name exists
+GET {{baseUrl}}/api/city/name-exists?name=Ho Chi Minh City
+Content-Type: application/json
+
+###
+
+### Delete city
+DELETE {{baseUrl}}/api/city/1
+Content-Type: application/json
+
+###
+
+# Variables
+@baseUrl = https://localhost:7001 
