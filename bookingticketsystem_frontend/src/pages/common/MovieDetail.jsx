@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Row, Col, Typography, Button, Card, Tag, Rate, List, Input, message, Avatar, Breadcrumb, Pagination } from "antd";
+import { Row, Col, Typography, Button, Card, Tag, Rate, List, Input, message, Avatar, Breadcrumb, Pagination, Spin } from "antd";
 import { UserOutlined, HeartOutlined, HeartFilled, HomeOutlined } from "@ant-design/icons";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -7,8 +7,19 @@ import { movieFavoriteService, movieService, commentService, voteService, showSe
 import Toast from "../../components/Toast";
 import './ShowtimesGrid.css';
 import MovieCard from '../../components/MovieCard';
+import dayjs from "dayjs";
 
 const { Title, Paragraph } = Typography;
+
+// Ảnh poster mặc định khi không có ảnh
+const DEFAULT_POSTER = "/default-poster.png";
+
+// Hàm kiểm tra xem một suất chiếu có trong quá khứ hay không
+function isShowtimePast(showtime) {
+  const now = new Date();
+  const showtimeDate = new Date(showtime.startTime);
+  return showtimeDate < now;
+}
 
 const MovieDetail = () => {
   const { id } = useParams();
@@ -21,6 +32,7 @@ const MovieDetail = () => {
   const [loading, setLoading] = useState(true);
   const [isFavorite, setIsFavorite] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const [posterError, setPosterError] = useState(false);
 
   // State cho comment và rating
   const [comments, setComments] = useState([]);
@@ -33,6 +45,7 @@ const MovieDetail = () => {
   const [commentPage, setCommentPage] = useState(1);
   const [commentTotal, setCommentTotal] = useState(0);
   const [commentPageSize] = useState(10);
+  const [userHasVoted, setUserHasVoted] = useState(false);
 
   // State cho lịch chiếu
   const [shows, setShows] = useState([]);
@@ -65,6 +78,9 @@ const MovieDetail = () => {
       const userVote = await voteService.getByUserAndMovie(user.userId, movieId);
       if (userVote) {
         setRatingValue(userVote.ratingValue);
+        setUserHasVoted(true);
+      } else {
+        setUserHasVoted(false);
       }
     } catch (error) {
       console.error('Không thể tải đánh giá của user:', error);
@@ -74,8 +90,6 @@ const MovieDetail = () => {
   const loadMovieData = async () => {
     setLoading(true);
     try {
-
-
       const [movieData, showsData, votesData, voteStatsData, commentsData, commentCount] = await Promise.all([
         movieService.getById(movieId),
         showService.getByMovie(movieId),
@@ -89,14 +103,16 @@ const MovieDetail = () => {
         commentService.getCountByMovie(movieId)
       ]);
 
-
+      // Lọc bỏ các suất chiếu đã qua
+      const currentShows = showsData.filter(show => !isShowtimePast(show));
 
       setMovie(movieData);
-      setShows(showsData);
+      setShows(currentShows);
       setVotes(votesData);
       setVoteStats(voteStatsData);
       setComments(commentsData);
       setCommentTotal(commentCount);
+      setPosterError(false); // Reset poster error state
     } catch (error) {
       console.error('Error loading movie data:', error);
       Toast.error('Không thể tải thông tin phim: ' + error.message);
@@ -160,31 +176,44 @@ const MovieDetail = () => {
 
     setCommentLoading(true);
     try {
-
-
       const commentData = {
         movieId: movieId,
         userId: user.userId,
         commentText: commentValue
       };
 
-
       await commentService.create(commentData);
 
-      // Reload comments
-      const [newComments, newCount] = await Promise.all([
+      // Hiển thị bình luận tạm thời trước khi tải lại
+      const tempComment = {
+        commentId: `temp-${Date.now()}`,
+        movieId: movieId,
+        userId: user.userId,
+        userName: user.name,
+        commentText: commentValue,
+        createdAt: new Date().toISOString(),
+        isApproved: false,
+      };
+      
+      // Thêm bình luận mới vào đầu danh sách
+      setComments([tempComment, ...comments]);
+      setCommentTotal(commentTotal + 1);
+      setCommentValue("");
+      Toast.success("Gửi bình luận thành công! Bình luận sẽ được hiển thị sau khi được duyệt.");
+
+      // Tải lại bình luận sau khi gửi
+      setTimeout(() => {
         commentService.getByMovie(movieId, {
           page: 1,
           pageSize: commentPageSize,
-          approvedOnly: !user // Chỉ hiển thị comments đã duyệt cho guest, hiển thị tất cả cho user đã đăng nhập
-        }),
-        commentService.getCountByMovie(movieId)
-      ]);
-      setComments(newComments);
-      setCommentTotal(newCount);
-      setCommentPage(1);
-      setCommentValue("");
-      Toast.success("Gửi bình luận thành công!");
+          approvedOnly: !user
+        }).then(newComments => {
+          setComments(newComments);
+          commentService.getCountByMovie(movieId).then(count => {
+            setCommentTotal(count);
+          });
+        });
+      }, 1000);
     } catch (error) {
       console.error('Comment error details:', error);
       console.error('Error response:', error.response);
@@ -202,26 +231,36 @@ const MovieDetail = () => {
 
     setVoteLoading(true);
     try {
-
-
       const voteData = {
         movieId: movieId,
         userId: user.userId,
         ratingValue: ratingValue
       };
 
-
-
       await voteService.createOrUpdate(voteData);
+      setUserHasVoted(true);
 
       // Reload votes and stats
       const [newVotes, newStats] = await Promise.all([
         voteService.getByMovie(movieId),
         voteService.getMovieStats(movieId)
       ]);
+      
       setVotes(newVotes);
       setVoteStats(newStats);
-      Toast.success("Đánh giá thành công!");
+      
+      // Cập nhật lại movie với rating mới
+      // Vì rating của phim được tính từ trung bình của tất cả votes
+      const updatedMovie = { ...movie };
+      updatedMovie.rating = newStats.averageRating;
+      setMovie(updatedMovie);
+      
+      Toast.success(userHasVoted ? "Cập nhật đánh giá thành công!" : "Đánh giá thành công!");
+      
+      // Tải lại danh sách phim để cập nhật rating ở các trang khác
+      setTimeout(() => {
+        movieService.getAll();
+      }, 1000);
     } catch (error) {
       console.error('Vote error details:', error);
       console.error('Error response:', error.response);
@@ -232,6 +271,12 @@ const MovieDetail = () => {
   };
 
   const handleBookShow = (show) => {
+    // Kiểm tra suất chiếu có phải là quá khứ không
+    if (isShowtimePast(show)) {
+      Toast.error('Suất chiếu này đã qua thời gian chiếu');
+      return;
+    }
+    
     if (!user) {
       Toast.warning('Vui lòng đăng nhập để đặt vé!');
       navigate('/login');
@@ -251,10 +296,17 @@ const MovieDetail = () => {
       Toast.success('Đã tạo dữ liệu mẫu cho lịch chiếu phim.');
       // Reload shows to reflect new data
       const newShows = await showService.getByMovie(movieId);
-      setShows(newShows);
+      // Lọc bỏ các suất chiếu đã qua
+      const currentShows = newShows.filter(show => !isShowtimePast(show));
+      setShows(currentShows);
     } catch (error) {
       Toast.error('Có lỗi khi tạo dữ liệu mẫu: ' + error.message);
     }
+  };
+
+  // Xử lý khi ảnh bị lỗi
+  const handleImageError = () => {
+    setPosterError(true);
   };
 
   if (loading) {
@@ -271,7 +323,8 @@ const MovieDetail = () => {
 
         <Card>
           <div style={{ textAlign: 'center', padding: '50px' }}>
-            <div>Đang tải thông tin phim...</div>
+            <Spin size="large" />
+            <div style={{ marginTop: 16 }}>Đang tải thông tin phim...</div>
           </div>
         </Card>
       </div>
@@ -321,14 +374,15 @@ const MovieDetail = () => {
       <Row gutter={[32, 24]}>
         <Col xs={24} md={8}>
           <img
-            src={movie.posterUrl}
+            src={posterError || !movie.posterUrl ? DEFAULT_POSTER : movie.posterUrl}
             alt={movie.title}
             style={{ width: "100%", borderRadius: 8, boxShadow: "0 2px 8px #ccc" }}
+            onError={handleImageError}
           />
           <div style={{ marginTop: 16, textAlign: "center" }}>
-            <Rate allowHalf disabled value={avgRating} style={{ fontSize: 24 }} />
-            <div style={{ fontWeight: 700, fontSize: 18, marginTop: 4, color: avgRating > 0 ? '#faad14' : '#888' }}>
-              {avgRating > 0 ? `${avgRating.toFixed(1)} / 5.0` : "Chưa có đánh giá"}
+            <Rate allowHalf disabled value={movie.rating} style={{ fontSize: 24 }} />
+            <div style={{ fontWeight: 700, fontSize: 18, marginTop: 4, color: movie.rating > 0 ? '#faad14' : '#888' }}>
+              {movie.rating > 0 ? `${movie.rating.toFixed(1)} / 5.0` : "Chưa có đánh giá"}
             </div>
             {voteStats && (
               <div style={{ fontSize: 14, color: '#666', marginTop: 4 }}>
@@ -419,7 +473,7 @@ const MovieDetail = () => {
         <Title level={4}>Lịch chiếu</Title>
         {shows.length > 0 ? (
           <>
-            <ShowtimesPaginated shows={shows} movieId={movieId} navigate={navigate} />
+            <ShowtimesPaginated shows={shows} movieId={movieId} navigate={handleBookShow} />
           </>
         ) : (
           <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
@@ -485,7 +539,7 @@ const MovieDetail = () => {
                   loading={voteLoading}
                   disabled={ratingValue === 0}
                 >
-                  Gửi đánh giá
+                  {userHasVoted ? "Cập nhật đánh giá" : "Gửi đánh giá"}
                 </Button>
               </div>
               {/* Bình luận */}
@@ -511,6 +565,9 @@ const MovieDetail = () => {
                   >
                     Gửi
                   </Button>
+                </div>
+                <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
+                  Lưu ý: Bình luận sẽ được kiểm duyệt trước khi hiển thị công khai.
                 </div>
               </div>
             </div>
@@ -590,6 +647,13 @@ function ShowtimesPaginated({ shows, movieId, navigate }) {
   const PAGE_SIZE = 4;
   const pagedShows = shows.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
+  // Kiểm tra xem một suất chiếu có trong quá khứ hay không
+  const isPast = (show) => {
+    const now = new Date();
+    const showtimeDate = new Date(show.startTime);
+    return showtimeDate < now;
+  };
+
   return (
     <>
       <div className="showtimes-grid-2">
@@ -604,7 +668,10 @@ function ShowtimesPaginated({ shows, movieId, navigate }) {
               <div className="showtime-cinema">Rạp: <b>{show.cinemaName || '---'}</b></div>
               <div className="showtime-price">{show.ticketPrice.toLocaleString('vi-VN')} VNĐ</div>
             </div>
-            <button className="showtime-book-btn" onClick={() => navigate(`/booking?movieId=${movieId}&showtimeId=${show.showId}`)}>
+            <button 
+              className="showtime-book-btn" 
+              onClick={() => navigate(show)}
+            >
               Đặt vé
             </button>
           </div>

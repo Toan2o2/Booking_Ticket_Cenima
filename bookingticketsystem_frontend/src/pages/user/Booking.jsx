@@ -7,6 +7,7 @@ import showService from "../../services/showService";
 import publicSeatService from "../../services/publicSeatService";
 import bookingService from "../../services/bookingService";
 import Toast from "../../components/Toast";
+import dayjs from "dayjs";
 
 const { Title } = Typography;
 const { Step } = Steps;
@@ -17,6 +18,13 @@ function getWeekdayVN(dateStr) {
   const days = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
   const d = new Date(dateStr);
   return days[d.getDay()];
+}
+
+// Hàm kiểm tra xem một suất chiếu có trong quá khứ hay không
+function isShowtimePast(showtime) {
+  const now = new Date();
+  const showtimeDate = new Date(showtime.startTime);
+  return showtimeDate < now;
 }
 
 const Booking = () => {
@@ -75,6 +83,21 @@ const Booking = () => {
     }
   }, [selectedWeekday, selectedMovie]);
 
+  // Kiểm tra và xóa suất chiếu đã chọn nếu nó đã qua
+  useEffect(() => {
+    // Kiểm tra suất chiếu đã chọn nếu nó đã qua thời gian
+    if (selectedShowtime && isShowtimePast(selectedShowtime)) {
+      Toast.error('Suất chiếu đã qua, vui lòng chọn suất chiếu khác');
+      setSelectedShowtime(null);
+      setSelectedSeats([]);
+      setSeatAvailability(null);
+      setSeatMap([]);
+      if (current > 1) {
+        setCurrent(1); // Trở lại bước chọn suất chiếu
+      }
+    }
+  }, [selectedShowtime]);
+
   const loadMovies = async () => {
     try {
       const moviesData = await movieService.getAll();
@@ -88,12 +111,24 @@ const Booking = () => {
   const loadShowtimes = async (movieId, showtimeId) => {
     try {
       const showtimesData = await showService.getByMovie(movieId);
-      setSelectedMovie(prev => ({ ...prev, showtimes: showtimesData }));
+      
+      // Lọc bỏ các suất chiếu đã qua
+      const currentShowtimes = showtimesData.filter(show => !isShowtimePast(show));
+      
+      setSelectedMovie(prev => ({ ...prev, showtimes: currentShowtimes }));
+      
       if (showtimeId) {
-        const show = showtimesData.find(s => s.showId === Number(showtimeId));
+        const show = currentShowtimes.find(s => s.showId === Number(showtimeId));
         if (show) {
-          setSelectedShowtime(show);
-          await loadSeatAvailability(show.showId);
+          if (!isShowtimePast(show)) {
+            setSelectedShowtime(show);
+            await loadSeatAvailability(show.showId);
+          } else {
+            Toast.error('Suất chiếu đã qua, vui lòng chọn suất chiếu khác');
+          }
+        } else {
+          // Không tìm thấy show hoặc đã qua
+          Toast.error('Suất chiếu không tồn tại hoặc đã qua thời gian');
         }
       }
     } catch (error) {
@@ -140,6 +175,13 @@ const Booking = () => {
   // Bước 2: Chọn suất chiếu
   const handleSelectShowtime = async (showId) => {
     const show = selectedMovie.showtimes.find(s => s.showId === showId);
+    
+    // Kiểm tra nếu suất chiếu đã qua
+    if (show && isShowtimePast(show)) {
+      Toast.error('Suất chiếu này đã qua, vui lòng chọn suất chiếu khác');
+      return;
+    }
+    
     setSelectedShowtime(show);
     setSelectedSeats([]);
     
@@ -174,6 +216,14 @@ const Booking = () => {
       message.warning("Vui lòng chọn ít nhất 1 ghế!");
       return;
     }
+    
+    // Kiểm tra lại xem suất chiếu có phải là trong quá khứ không
+    if (isShowtimePast(selectedShowtime)) {
+      Toast.error('Không thể đặt vé cho suất chiếu đã qua');
+      navigate(`?movieId=${selectedMovie.movieId}`, { replace: true });
+      setCurrent(1);
+      return;
+    }
 
     try {
       setLoading(true);
@@ -191,10 +241,10 @@ const Booking = () => {
       message.success(`Mã đặt vé: ${result.bookingId}`);
       
       // Reset form
-    setCurrent(0);
-    setSelectedMovie(null);
-    setSelectedShowtime(null);
-    setSelectedSeats([]);
+      setCurrent(0);
+      setSelectedMovie(null);
+      setSelectedShowtime(null);
+      setSelectedSeats([]);
       setSeatAvailability(null);
       setSeatMap([]);
       
@@ -207,8 +257,12 @@ const Booking = () => {
     }
   };
 
-  // Lấy danh sách suất chiếu đã lọc theo thứ
+  // Lấy danh sách suất chiếu đã lọc theo thứ và loại bỏ suất chiếu trong quá khứ
   const filteredShowtimes = selectedMovie?.showtimes?.filter(s => {
+    // Loại bỏ suất chiếu đã qua
+    if (isShowtimePast(s)) return false;
+    
+    // Lọc theo ngày trong tuần nếu đã chọn
     if (selectedWeekday === 'all') return true;
     const d = new Date(s.startTime);
     return d.getDay() === Number(selectedWeekday);
@@ -452,6 +506,13 @@ const Booking = () => {
       message.warning("Vui lòng chọn suất chiếu!");
       return;
     }
+    
+    // Kiểm tra xem suất chiếu có trong quá khứ không trước khi cho phép chuyển sang bước tiếp theo
+    if (current === 1 && isShowtimePast(selectedShowtime)) {
+      Toast.error('Không thể đặt vé cho suất chiếu đã qua');
+      return;
+    }
+    
     if (current === 2 && selectedSeats.length === 0) {
       message.warning("Vui lòng chọn ghế!");
       return;

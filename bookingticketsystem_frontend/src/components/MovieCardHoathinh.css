@@ -69,6 +69,25 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin-bottom: 8px;
+}
+
+/* Styling cho phần hiển thị đánh giá */
+.movie-card-rating {
+  display: flex;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.movie-card-rating .ant-rate {
+  font-size: 12px;
+  margin-right: 5px;
+}
+
+.movie-card-rating-text {
+  font-size: 12px;
+  color: #faad14;
+  font-weight: 500;
 }
 
 /* Gợi ý grid 5 cột cho danh sách phim */

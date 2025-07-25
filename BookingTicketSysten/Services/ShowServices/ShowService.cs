@@ -61,6 +61,40 @@ namespace BookingTicketSysten.Services.ShowServices
 
         public async Task<ShowDto> CreateShowAsync(CreateShowDto dto)
         {
+            // Get current date and time for validation
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var now = DateTime.Now;
+
+            if (dto.ShowDate.HasValue && dto.ShowDate.Value < today)
+            {
+                throw new InvalidOperationException("Không thể tạo suất chiếu trong quá khứ");
+            }
+
+            DateOnly? showDate;
+            if (!dto.ShowDate.HasValue && dto.StartTime != DateTime.MinValue)
+            {
+                showDate = DateOnly.FromDateTime(dto.StartTime.Date);
+                if (showDate.Value < today)
+                {
+                    throw new InvalidOperationException("Không thể tạo suất chiếu trong quá khứ");
+                }
+            }
+            else if (dto.ShowDate.HasValue)
+            {
+                showDate = dto.ShowDate.Value;
+            }
+            else
+            {
+                showDate = DateOnly.FromDateTime(DateTime.Today);
+            }
+            
+            // Check if the start time is in the past
+            // If the show is for today, validate that the time hasn't passed
+            if (showDate.Value == today && dto.StartTime < now)
+            {
+                throw new InvalidOperationException("Không thể tạo suất chiếu trong quá khứ");
+            }
+
             var show = new Show
             {
                 MovieId = dto.MovieId,
@@ -68,7 +102,7 @@ namespace BookingTicketSysten.Services.ShowServices
                 StartTime = dto.StartTime,
                 EndTime = dto.EndTime,
                 TicketPrice = dto.TicketPrice,
-                ShowDate = dto.ShowDate,
+                ShowDate = showDate,
                 CreatedAt = DateTime.Now
             };
 
@@ -83,12 +117,46 @@ namespace BookingTicketSysten.Services.ShowServices
             var show = await _context.Shows.FindAsync(id);
             if (show == null) return false;
 
+            // Get current date and time for validation
+            var today = DateOnly.FromDateTime(DateTime.Today);
+            var now = DateTime.Now;
+
+            if (dto.ShowDate.HasValue && dto.ShowDate.Value < today)
+            {
+                throw new InvalidOperationException("Không thể cập nhật suất chiếu vào ngày trong quá khứ");
+            }
+
+            DateOnly? showDate;
+            if (!dto.ShowDate.HasValue && dto.StartTime != DateTime.MinValue)
+            {
+                showDate = DateOnly.FromDateTime(dto.StartTime.Date);
+                if (showDate.Value < today)
+                {
+                    throw new InvalidOperationException("Không thể tạo suất chiếu trong quá khứ");
+                }
+            }
+            else if (dto.ShowDate.HasValue)
+            {
+                showDate = dto.ShowDate.Value;
+            }
+            else
+            {
+                showDate = show.ShowDate ?? DateOnly.FromDateTime(DateTime.Today);
+            }
+            
+            // Check if the start time is in the past
+            // If the show is for today, validate that the time hasn't passed
+            if (showDate.Value == today && dto.StartTime < now)
+            {
+                throw new InvalidOperationException("Không thể cập nhật suất chiếu với thời gian trong quá khứ");
+            }
+
             show.MovieId = dto.MovieId;
             show.HallId = dto.HallId;
             show.StartTime = dto.StartTime;
             show.EndTime = dto.EndTime;
             show.TicketPrice = dto.TicketPrice;
-            show.ShowDate = dto.ShowDate;
+            show.ShowDate = showDate;
             show.ModifiedAt = DateTime.Now;
 
             await _context.SaveChangesAsync();

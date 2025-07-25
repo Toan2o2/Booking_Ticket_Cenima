@@ -140,7 +140,12 @@ const Home = () => {
                 <div style={{ fontSize: 16 }}>{movie.description?.slice(0, 120)}...</div>
                 <div style={{ marginTop: 8 }}>
                   {movie.Genres?.map(g => <Tag key={g.genreId}>{g.name}</Tag>)}
-                  <Rate disabled value={movie.rating} count={5} style={{ marginLeft: 12 }} />
+                  <div style={{ marginTop: 8, display: 'flex', alignItems: 'center' }}>
+                    <Rate allowHalf disabled value={movie.rating} count={5} style={{ marginRight: 8 }} />
+                    <span style={{ fontSize: 16, fontWeight: 'bold', color: '#FFD700' }}>
+                      {movie.rating > 0 ? `${movie.rating.toFixed(1)}/5` : 'Chưa có đánh giá'}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>

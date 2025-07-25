@@ -43,22 +43,51 @@ namespace BookingTicketSysten.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateShowDto dto)
         {
-            var created = await _showService.CreateShowAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { id = created.ShowId }, created);
+            try
+            {
+                var created = await _showService.CreateShowAsync(dto);
+                return CreatedAtAction(nameof(GetById), new { id = created.ShowId }, created);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi tạo suất chiếu: {ex.Message}" });
+            }
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> Update(int id, [FromBody] CreateShowDto dto)
         {
-            var updated = await _showService.UpdateShowAsync(id, dto);
-            return updated ? NoContent() : NotFound();
+            try
+            {
+                var updated = await _showService.UpdateShowAsync(id, dto);
+                return updated ? NoContent() : NotFound();
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi cập nhật suất chiếu: {ex.Message}" });
+            }
         }
 
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(int id)
         {
-            var deleted = await _showService.DeleteShowAsync(id);
-            return deleted ? NoContent() : NotFound();
+            try
+            {
+                var deleted = await _showService.DeleteShowAsync(id);
+                return deleted ? NoContent() : NotFound();
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = $"Lỗi khi xóa suất chiếu: {ex.Message}" });
+            }
         }
     }
 }

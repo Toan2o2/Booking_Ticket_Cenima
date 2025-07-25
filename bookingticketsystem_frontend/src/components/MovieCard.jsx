@@ -1,5 +1,6 @@
 import React from "react";
 import { HeartFilled, HeartOutlined } from '@ant-design/icons';
+import { Rate } from 'antd';
 import './MovieCardHoathinh.css';
 
 const POSTER_HEIGHT = 280;
@@ -28,7 +29,7 @@ export default function MovieCard({ movie, isFavorite, loadingFavorite, onToggle
           {isFavorite ? <HeartFilled style={{ color: '#eb2f96', fontSize: 20 }} /> : <HeartOutlined style={{ color: '#888', fontSize: 20 }} />}
         </button>
         {/* Hiển thị rating số ở góc dưới phải poster */}
-        {typeof movie.rating === 'number' && (
+        {typeof movie.rating === 'number' && movie.rating > 0 && (
           <div className="movie-card-rating-number">
             {movie.rating.toFixed(1)}
           </div>
@@ -37,6 +38,13 @@ export default function MovieCard({ movie, isFavorite, loadingFavorite, onToggle
       <div className="movie-card-info">
         <div className="movie-card-title">{movie.title}</div>
         <div className="movie-card-desc">{movie.description?.slice(0, 48) || ''}</div>
+        {/* Thêm hiển thị số sao dựa trên rating */}
+        <div className="movie-card-rating">
+          <Rate disabled allowHalf value={movie.rating} style={{ fontSize: 12 }} />
+          <span className="movie-card-rating-text">
+            {movie.rating > 0 ? `${movie.rating.toFixed(1)}/5` : 'Chưa có đánh giá'}
+          </span>
+        </div>
       </div>
     </div>
   );

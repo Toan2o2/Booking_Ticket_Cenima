@@ -34,9 +34,51 @@ namespace BookingTicketSysten.Services.VoteServices
                 vote.RatingValue = dto.RatingValue;
                 vote.VoteTime = DateTime.UtcNow;
             }
+            
+            // Lưu vote trước
             await _context.SaveChangesAsync();
+            
+            // Cập nhật rating của phim
+            await UpdateMovieRatingAsync(dto.MovieId);
+            
             return MapToDto(vote);
         }
+        
+        // Phương thức mới để cập nhật rating của phim
+        private async Task UpdateMovieRatingAsync(int movieId)
+        {
+            try
+            {
+                // Tính toán rating trung bình từ tất cả vote của phim
+                var votes = await _context.Votes
+                    .Where(v => v.MovieId == movieId)
+                    .ToListAsync();
+                
+                // Tính trung bình rating với cast tường minh sang decimal
+                decimal averageRating = votes.Any() 
+                    ? (decimal)Math.Round(votes.Average(v => (decimal)v.RatingValue), 1) // Cast sang decimal
+                    : 0m; // Sử dụng 0m để chỉ định decimal literal
+                
+                // Lấy và cập nhật thông tin phim
+                var movie = await _context.Movies.FindAsync(movieId);
+                if (movie != null)
+                {
+                    movie.Rating = averageRating;
+                    movie.ModifiedAt = DateTime.UtcNow;
+                    
+                    // Lưu thay đổi vào database
+                    await _context.SaveChangesAsync();
+                    
+                    Console.WriteLine($"Đã cập nhật rating của phim {movieId}: {averageRating}");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi khi cập nhật rating phim: {ex.Message}");
+                // Không ném ngoại lệ để không ảnh hưởng đến flow chính
+            }
+        }
+        
         public async Task<IEnumerable<VoteDto>> GetVotesByMovieAsync(int movieId)
         {
             var votes = await _context.Votes.Where(v => v.MovieId == movieId).ToListAsync();
@@ -53,15 +95,29 @@ namespace BookingTicketSysten.Services.VoteServices
             if (vote == null) return null;
             vote.RatingValue = dto.RatingValue;
             vote.VoteTime = DateTime.UtcNow;
+            
+            // Lưu vote trước
             await _context.SaveChangesAsync();
+            
+            // Cập nhật rating của phim
+            await UpdateMovieRatingAsync(vote.MovieId);
+            
             return MapToDto(vote);
         }
         public async Task<bool> DeleteVoteAsync(int voteId)
         {
             var vote = await _context.Votes.FindAsync(voteId);
             if (vote == null) return false;
+            
+            // Lưu lại movie ID trước khi xóa vote
+            int movieId = vote.MovieId;
+            
             _context.Votes.Remove(vote);
             await _context.SaveChangesAsync();
+            
+            // Cập nhật lại rating của phim sau khi xóa vote
+            await UpdateMovieRatingAsync(movieId);
+            
             return true;
         }
         public async Task<VoteStatsDto> GetMovieVoteStatsAsync(int movieId)

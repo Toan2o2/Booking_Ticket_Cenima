@@ -27,6 +27,14 @@ import '../../styles/admin.css';
 const { Title } = Typography;
 const { Option } = Select;
 
+const getCurrentDate = () => {
+  return dayjs().startOf('day');
+};
+
+const getCurrentTime = () => {
+  return dayjs();
+};
+
 const Showtimes = () => {
   const [showtimes, setShowtimes] = useState([]);
   const [movies, setMovies] = useState([]);
@@ -38,6 +46,7 @@ const Showtimes = () => {
   const [detailVisible, setDetailVisible] = useState(false);
   const [detailShow, setDetailShow] = useState(null);
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -64,21 +73,24 @@ const Showtimes = () => {
   const handleAdd = () => {
     setEditingShow(null);
     form.resetFields();
-    setSelectedMovie(null); // Reset selected movie
+    setSelectedMovie(null); 
+    setSelectedDate(null); 
     setModalVisible(true);
   };
 
   const handleEdit = (record) => {
     setEditingShow(record);
+    const dateValue = record.startTime ? dayjs(record.startTime.split('T')[0], 'YYYY-MM-DD') : null;
     form.setFieldsValue({
       movieId: record.movieId,
       hallId: record.hallId,
-      date: record.startTime ? dayjs(record.startTime.split('T')[0], 'YYYY-MM-DD') : null,
+      date: dateValue,
       startTime: record.startTime ? dayjs(record.startTime, 'YYYY-MM-DDTHH:mm:ss') : null,
       endTime: record.endTime ? dayjs(record.endTime, 'YYYY-MM-DDTHH:mm:ss') : null,
       ticketPrice: record.ticketPrice
     });
-    setSelectedMovie(null); // Reset selected movie
+    setSelectedMovie(null); 
+    setSelectedDate(dateValue); 
     setModalVisible(true);
   };
 
@@ -99,11 +111,25 @@ const Showtimes = () => {
   const handleMovieChange = (movieId) => {
     const movie = movies.find(m => m.movieId === movieId);
     setSelectedMovie(movie);
-    // Nếu đã chọn startTime thì tự động tính endTime
     const startTime = form.getFieldValue('startTime');
     if (startTime && movie && movie.duration) {
       const endTime = startTime.clone().add(movie.duration, 'minute');
       form.setFieldsValue({ endTime });
+    }
+  };
+
+  const handleDateChange = (date) => {
+    setSelectedDate(date);
+    
+
+    if (date && date.isSame(dayjs(), 'day')) {
+      const currentStartTime = form.getFieldValue('startTime');
+      if (currentStartTime && currentStartTime.isBefore(dayjs())) {
+        form.setFieldsValue({ startTime: null });
+        if (selectedMovie) {
+          form.setFieldsValue({ endTime: null });
+        }
+      }
     }
   };
 
@@ -119,11 +145,29 @@ const Showtimes = () => {
   const handleSubmit = async (values) => {
     try {
       const date = values.date.format('YYYY-MM-DD');
-      // Tính lại endTime nếu cần
       let endTime = values.endTime;
       if (selectedMovie && selectedMovie.duration && values.startTime) {
         endTime = values.startTime.clone().add(selectedMovie.duration, 'minute');
       }
+      
+      const selectedDate = dayjs(date);
+      const currentDate = dayjs().startOf('day');
+      
+      if (selectedDate.isBefore(currentDate)) {
+        Toast.error('Không thể tạo suất chiếu trong quá khứ. Vui lòng chọn ngày hiện tại hoặc tương lai.');
+        return;
+      }
+      
+      if (selectedDate.isSame(currentDate, 'day')) {
+        const selectedTime = values.startTime;
+        const currentTime = dayjs();
+        
+        if (selectedTime.isBefore(currentTime)) {
+          Toast.error('Không thể tạo suất chiếu với thời gian đã trôi qua.');
+          return;
+        }
+      }
+      
       const startTime = values.startTime ? `${date}T${values.startTime.format('HH:mm')}:00` : null;
       const endTimeStr = endTime ? `${date}T${endTime.format('HH:mm')}:00` : null;
       const showDate = date;
@@ -168,6 +212,28 @@ const Showtimes = () => {
       case 'cancelled': return 'Đã hủy';
       default: return status;
     }
+  };
+
+  const disabledDate = (current) => {
+    return current && current < dayjs().startOf('day');
+  };
+  
+  const disabledTime = (now) => {
+    if (selectedDate && selectedDate.isSame(dayjs(), 'day')) {
+      const currentHour = dayjs().hour();
+      const currentMinute = dayjs().minute();
+      
+      return {
+        disabledHours: () => Array.from({ length: currentHour }, (_, i) => i),
+        disabledMinutes: (selectedHour) => {
+          if (selectedHour === currentHour) {
+            return Array.from({ length: currentMinute }, (_, i) => i);
+          }
+          return [];
+        }
+      };
+    }
+    return {};
   };
 
   const columns = [
@@ -331,7 +397,13 @@ const Showtimes = () => {
               label="Ngày chiếu"
               rules={[{ required: true, message: 'Vui lòng chọn ngày chiếu!' }]}
             >
-              <DatePicker format="YYYY-MM-DD" style={{ width: '100%' }} />
+              <DatePicker 
+                format="YYYY-MM-DD" 
+                style={{ width: '100%' }} 
+                disabledDate={disabledDate} 
+                placeholder="Chọn ngày chiếu (từ hôm nay trở đi)"
+                onChange={handleDateChange}
+              />
             </Form.Item>
             <Form.Item
               name="startTime"
@@ -340,7 +412,17 @@ const Showtimes = () => {
                 { required: true, message: 'Vui lòng chọn giờ bắt đầu!' }
               ]}
             >
-              <TimePicker format="HH:mm" style={{ width: '100%' }} onChange={handleStartTimeChange} />
+              <TimePicker 
+                format="HH:mm" 
+                style={{ width: '100%' }} 
+                onChange={handleStartTimeChange}
+                disabledTime={disabledTime}
+                minuteStep={5}
+                hideDisabledOptions={true}
+                placeholder={selectedDate && selectedDate.isSame(dayjs(), 'day') ? 
+                  "Chọn giờ bắt đầu (từ thời điểm hiện tại)" : 
+                  "Chọn giờ bắt đầu"}
+              />
             </Form.Item>
             {/* Ẩn input endTime, chỉ hiển thị read-only */}
             <Form.Item
