@@ -13,3 +13,4 @@ export { default as paymentService } from './paymentService';
 export { default as userService } from './userService';
 export { default as seatService } from './seatService';
 export { default as voteService } from './voteService'; 
+export { default as revenueService } from './revenueService'; 

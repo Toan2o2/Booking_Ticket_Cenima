@@ -16,7 +16,9 @@
   box-shadow: 2px 0 8px #f0f1f2;
   transition: width 0.2s;
 }
-
+body {
+    background-color: #f5f6fa;
+}
 /* Cố định header */
 .admin-header {
   position: fixed !important;

@@ -16,5 +16,7 @@ export const API_ENDPOINTS = {
   COMMENTS: '/Comment',
   MOVIE_FAVORITES: '/MovieFavorite',
   SEATS: '/admin/Seat',
-  PUBLIC_SEATS: '/PublicSeat'
+  PUBLIC_SEATS: '/PublicSeat',
+  REVENUE: '/Revenue',
+
 }; 

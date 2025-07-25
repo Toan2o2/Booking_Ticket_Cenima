@@ -42,6 +42,7 @@ const Login = () => {
         message.success("Đăng nhập thành công!");
         setTimeout(() => {
           if (userInfo.role?.toLowerCase() === "admin") navigate("/admin");
+          else if (userInfo.role?.toLowerCase() === "adminbusiness") navigate("/adminBusiness");
           else if (redirect) navigate(redirect);
           else navigate("/");
         }, 1000);
@@ -76,6 +77,7 @@ const Login = () => {
         message.success("Đăng nhập Google thành công!");
         setTimeout(() => {
           if (userInfo.role?.toLowerCase() === "admin") navigate("/admin");
+          else if (userInfo.role?.toLowerCase() === "adminbusiness") navigate("/adminBusiness");
           else if (redirect) navigate(redirect);
           else navigate("/");
         }, 1000);

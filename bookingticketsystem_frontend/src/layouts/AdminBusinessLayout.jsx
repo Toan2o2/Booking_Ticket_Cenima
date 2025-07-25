@@ -1,6 +1,7 @@
-import React, { useState, useRef, useEffect } from "react";
+﻿import React, { useState, useRef, useEffect } from "react";
 import { Layout, Menu, Avatar, Button } from "antd";
 import {
+  DashboardOutlined,
   UserOutlined,
   VideoCameraOutlined,
   TagsOutlined,
@@ -26,24 +27,16 @@ const SIDEBAR_WIDTH = 220;
 const SIDEBAR_COLLAPSED_WIDTH = 60;
 
 const menuItems = [
-  { key: "users", icon: <UserOutlined />, label: "Quản lý người dùng", link: "/admin" },
-  { key: "movies", icon: <VideoCameraOutlined />, label: "Quản lý phim", link: "/admin/movies" },
-  { key: "genres", icon: <TagsOutlined />, label: "Quản lý thể loại", link: "/admin/genres" },
-  { key: "cities", icon: <EnvironmentOutlined />, label: "Quản lý thành phố", link: "/admin/cities" },
-  { key: "actors", icon: <TeamOutlined />, label: "Quản lý diễn viên", link: "/admin/actors" },
-  { key: "cinemas", icon: <BankOutlined />, label: "Quản lý rạp chiếu", link: "/admin/cinemas" },
-  { key: "cinemahalls", icon: <HomeOutlined />, label: "Quản lý phòng chiếu", link: "/admin/cinemahalls" },
-  { key: "showtimes", icon: <CalendarOutlined />, label: "Quản lý suất chiếu", link: "/admin/showtimes" },
-  { key: "bookings", icon: <OrderedListOutlined />, label: "Quản lý đặt vé", link: "/admin/bookings" },
-  { key: "payments", icon: <CreditCardOutlined />, label: "Quản lý thanh toán", link: "/admin/payments" },
-  // { key: "comments", icon: <MessageOutlined />, label: "Quản lý bình luận", link: "/admin/comments" },
-  { key: "seats", icon: <OrderedListOutlined />, label: "Quản lý ghế ngồi", link: "/admin/seats" },
-  // { key: "votes", icon: <StarOutlined />, label: "Quản lý đánh giá", link: "/admin/votes" },
+    { key: "dashboard", icon: <DashboardOutlined />, label: "Dashboard", link: "/adminBusiness" },
+    { key: "usersRevenue", icon: <UserOutlined />, label: "Users", link: "/adminBusiness/usersRevenue" },
+    { key: "moviesRevenue", icon: <VideoCameraOutlined />, label: "Movies", link: "/adminBusiness/moviesRevenue" },
+    { key: "cinemasRevenue", icon: <BankOutlined />, label: "Cinemas", link: "/adminBusiness/cinemasRevenue" },
+
 ];
 
-const AdminLayout = ({ children }) => {
+const AdminBusinessLayout = ({ children }) => {
   const location = useLocation();
-  const selectedKey = location.pathname.split("/")[2] || "users";
+  const selectedKey = location.pathname.split("/")[2] || "dashboard";
   const user = JSON.parse(localStorage.getItem("user"));
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
@@ -140,8 +133,8 @@ const AdminLayout = ({ children }) => {
           }}
         >
           <Avatar style={{ backgroundColor: "#faad14", marginRight: 12 }} icon={<UserOutlined />} />
-          <span style={{ fontWeight: 600, marginRight: 24 }}>{user?.name || "Admin"}</span>
-          <Button icon={<LogoutOutlined />} onClick={handleLogout} danger>Đăng xuất</Button>
+          <span style={{ fontWeight: 600, marginRight: 24 }}>{user?.name || "Admin Business"}</span>
+          <Button icon={<LogoutOutlined />} onClick={handleLogout} danger>Logout</Button>
         </Header>
         <Content
           className="admin-content"
@@ -163,4 +156,4 @@ const AdminLayout = ({ children }) => {
   );
 };
 
-export default AdminLayout; 
+export default AdminBusinessLayout; 

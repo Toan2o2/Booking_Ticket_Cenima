@@ -7,7 +7,6 @@ import Register from "../pages/common/Register";
 import Booking from "../pages/user/Booking";
 import Profile from "../pages/user/Profile";
 import FavoriteMovies from "../pages/user/FavoriteMovies";
-import Dashboard from "../pages/admin/Dashboard";
 import Users from "../pages/admin/Users";
 import Movies from "../pages/admin/Movies";
 import Genres from "../pages/admin/Genres";
@@ -22,6 +21,11 @@ import Comments from "../pages/admin/Comments";
 import Seats from "../pages/admin/Seats";
 import Votes from "../pages/admin/Votes";
 import AdminLayout from "../layouts/AdminLayout";
+import AdminBusinessLayout from "../layouts/AdminBusinessLayout";
+import Dashboard from "../pages/adminBusiness/Dashboard";
+import UsersRevenue from "../pages/adminBusiness/UsersRevenue";
+import MoviesRevenue from "../pages/adminBusiness/MoviesRevenue";
+import CinemasRevenue from "../pages/adminBusiness/CinemasRevenue";
 import UserLayout from "../layouts/UserLayout";
 import ForgotPassword from "../pages/common/ForgotPassword";
 import BookingHistory from "../pages/user/BookingHistory";
@@ -39,6 +43,11 @@ const AdminRoute = ({ children }) => {
   return children;
 };
 
+const AdminBusinessRoute = ({ children }) => {
+    const user = getUser();
+    if (!user || user.role?.toLowerCase() !== "adminbusiness") return <Navigate to="/login" />;
+    return children;
+};
 const PrivateRoute = ({ children }) => {
   const user = getUser();
   const location = useLocation();
@@ -69,8 +78,8 @@ const AppRoutes = () => (
       <Route path="*" element={<Navigate to="/" replace />} />
     </Route>
     {/* Admin routes dùng AdminLayout riêng */}
-    <Route path="/admin" element={<AdminRoute><AdminLayout><Dashboard /></AdminLayout></AdminRoute>} />
-    <Route path="/admin/users" element={<AdminRoute><AdminLayout><Users /></AdminLayout></AdminRoute>} />
+   
+    <Route path="/admin" element={<AdminRoute><AdminLayout><Users /></AdminLayout></AdminRoute>} />
     <Route path="/admin/movies" element={<AdminRoute><AdminLayout><Movies /></AdminLayout></AdminRoute>} />
     <Route path="/admin/genres" element={<AdminRoute><AdminLayout><Genres /></AdminLayout></AdminRoute>} />
     <Route path="/admin/actors" element={<AdminRoute><AdminLayout><Actors /></AdminLayout></AdminRoute>} />
@@ -83,6 +92,11 @@ const AppRoutes = () => (
     <Route path="/admin/comments" element={<AdminRoute><AdminLayout><Comments /></AdminLayout></AdminRoute>} />
     <Route path="/admin/seats" element={<AdminRoute><AdminLayout><Seats /></AdminLayout></AdminRoute>} />
     <Route path="/admin/votes" element={<AdminRoute><AdminLayout><Votes /></AdminLayout></AdminRoute>} />
+
+     <Route path="/adminBusiness" element={<AdminBusinessRoute><AdminBusinessLayout><Dashboard /></AdminBusinessLayout></AdminBusinessRoute>} />
+     <Route path="/adminBusiness/usersRevenue" element={<AdminBusinessRoute><AdminBusinessLayout><UsersRevenue /></AdminBusinessLayout></AdminBusinessRoute>} />
+     <Route path="/adminBusiness/moviesRevenue" element={<AdminBusinessRoute><AdminBusinessLayout><MoviesRevenue /></AdminBusinessLayout></AdminBusinessRoute>} />
+     <Route path="/adminBusiness/cinemasRevenue" element={<AdminBusinessRoute><AdminBusinessLayout><CinemasRevenue /></AdminBusinessLayout></AdminBusinessRoute>} />
   </Routes>
 );
 
