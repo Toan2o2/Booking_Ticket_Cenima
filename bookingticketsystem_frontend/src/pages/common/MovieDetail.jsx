@@ -103,8 +103,10 @@ const MovieDetail = () => {
         commentService.getCountByMovie(movieId)
       ]);
 
-      // Lọc bỏ các suất chiếu đã qua
-      const currentShows = showsData.filter(show => !isShowtimePast(show));
+      // Lọc bỏ các suất chiếu đã qua và sắp xếp theo ngày tăng dần
+      const currentShows = showsData
+        .filter(show => !isShowtimePast(show))
+        .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
 
       setMovie(movieData);
       setShows(currentShows);
@@ -296,8 +298,10 @@ const MovieDetail = () => {
       Toast.success('Đã tạo dữ liệu mẫu cho lịch chiếu phim.');
       // Reload shows to reflect new data
       const newShows = await showService.getByMovie(movieId);
-      // Lọc bỏ các suất chiếu đã qua
-      const currentShows = newShows.filter(show => !isShowtimePast(show));
+      // Lọc bỏ các suất chiếu đã qua và sắp xếp theo ngày tăng dần
+      const currentShows = newShows
+        .filter(show => !isShowtimePast(show))
+        .sort((a, b) => new Date(a.startTime) - new Date(b.startTime));
       setShows(currentShows);
     } catch (error) {
       Toast.error('Có lỗi khi tạo dữ liệu mẫu: ' + error.message);

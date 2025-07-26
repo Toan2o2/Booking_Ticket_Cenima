@@ -33,29 +33,70 @@ import AllMovies from "../pages/common/AllMovies";
 // Các page khác sẽ thêm sau
 
 const getUser = () => {
-  const data = localStorage.getItem("user");
-  return data ? JSON.parse(data) : null;
+    const data = localStorage.getItem("user");
+    return data ? JSON.parse(data) : null;
+};
+
+// Function helper để lấy trang mặc định theo role
+const getDefaultPageByRole = (role) => {
+    switch (role?.toLowerCase()) {
+        case "customer":
+            return "/";
+        case "admin":
+            return "/admin";
+        case "adminbusiness":
+            return "/adminBusiness";
+        default:
+            return "/";
+    }
 };
 
 const AdminRoute = ({ children }) => {
-  const user = getUser();
-  if (!user || user.role?.toLowerCase() !== "admin") return <Navigate to="/login" />;
-  return children;
+    const user = getUser();
+
+    if (!user) {
+        return <Navigate to="/login" />;
+    }
+
+    if (user.role?.toLowerCase() !== "admin") {
+        const defaultPage = getDefaultPageByRole(user.role);
+        return <Navigate to={defaultPage} />;
+    }
+
+    return children;
 };
 
 const AdminBusinessRoute = ({ children }) => {
     const user = getUser();
-    if (!user || user.role?.toLowerCase() !== "adminbusiness") return <Navigate to="/login" />;
+
+    if (!user) {
+        return <Navigate to="/login" />;
+    }
+
+    if (user.role?.toLowerCase() !== "adminbusiness") {
+        const defaultPage = getDefaultPageByRole(user.role);
+        return <Navigate to={defaultPage} />;
+    }
+
     return children;
 };
+
 const PrivateRoute = ({ children }) => {
-  const user = getUser();
-  const location = useLocation();
-  if (!user || user.role?.toLowerCase() !== "customer") {
-    return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} />;
-  }
-  return children;
+    const user = getUser();
+    const location = useLocation();
+
+    if (!user) {
+        return <Navigate to={`/login?redirect=${encodeURIComponent(location.pathname + location.search)}`} />;
+    }
+
+    if (user.role?.toLowerCase() !== "customer") {
+        const defaultPage = getDefaultPageByRole(user.role);
+        return <Navigate to={defaultPage} />;
+    }
+
+    return children;
 };
+
 
 const AppRoutes = () => (
   <Routes>

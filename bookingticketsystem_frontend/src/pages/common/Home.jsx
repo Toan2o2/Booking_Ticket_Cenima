@@ -15,6 +15,7 @@ function getToday() {
 }
 
 const Home = () => {
+  document.title = "Phim hay mỗi ngày";
   const navigate = useNavigate();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
