@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Authorization;
 using System;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Security.Claims;
 
 namespace BookingTicketSysten.Controllers
 {
@@ -17,6 +18,30 @@ namespace BookingTicketSysten.Controllers
         {
             _voteService = voteService;
         }
+
+        // Thêm endpoint kiểm tra quyền đánh giá
+        [HttpGet("check-permission/{movieId}")]
+        [Authorize]
+        public async Task<IActionResult> CheckVotePermission(int movieId)
+        {
+            try
+            {
+                var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? "0");
+                if (userId == 0)
+                {
+                    return Unauthorized(new { message = "User not authenticated" });
+                }
+
+                var hasPermission = await _voteService.HasWatchedMovieAsync(userId, movieId);
+                return Ok(new { hasPermission });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error checking vote permission: {ex.Message}");
+                return StatusCode(500, new { message = "Internal server error", error = ex.Message });
+            }
+        }
+
         // 1.1. Gửi đánh giá cho phim (tạo hoặc cập nhật)
         [HttpPost]
         [Authorize]
@@ -35,6 +60,10 @@ namespace BookingTicketSysten.Controllers
 
                 var result = await _voteService.CreateOrUpdateVoteAsync(dto);
                 return Ok(result);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
             }
             catch (Exception ex)
             {

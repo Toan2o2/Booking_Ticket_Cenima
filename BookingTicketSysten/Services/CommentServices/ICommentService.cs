@@ -7,6 +7,7 @@ namespace BookingTicketSysten.Services.CommentServices
 {
     public interface ICommentService
     {
+        Task<bool> HasWatchedMovieAsync(int userId, int movieId);
         Task<CommentDto> AddCommentAsync(CommentCreateDto dto);
         Task<IEnumerable<CommentDto>> GetCommentsByMovieAsync(int movieId, int page, int pageSize, string sort, bool includeReplies, bool approvedOnly, bool isAdmin);
         Task<CommentDto?> UpdateCommentAsync(int commentId, int userId, CommentUpdateDto dto, bool isAdmin);

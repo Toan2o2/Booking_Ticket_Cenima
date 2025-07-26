@@ -15,8 +15,29 @@ namespace BookingTicketSysten.Services.VoteServices
         {
             _context = context;
         }
+
+        // Thêm method kiểm tra quyền đánh giá
+        public async Task<bool> HasWatchedMovieAsync(int userId, int movieId)
+        {
+            var booking = await _context.Bookings
+                .Include(b => b.Show)
+                .Where(b => b.UserId == userId && 
+                           b.Show.MovieId == movieId && 
+                           b.Status == "Confirmed")
+                .FirstOrDefaultAsync();
+            
+            return booking != null;
+        }
+
         public async Task<VoteDto> CreateOrUpdateVoteAsync(VoteCreateUpdateDto dto)
         {
+            // Kiểm tra quyền trước
+            var hasWatched = await HasWatchedMovieAsync(dto.UserId, dto.MovieId);
+            if (!hasWatched)
+            {
+                throw new InvalidOperationException("Bạn cần đặt và xem phim trước khi đánh giá.");
+            }
+
             var vote = await _context.Votes.FirstOrDefaultAsync(v => v.MovieId == dto.MovieId && v.UserId == dto.UserId);
             if (vote == null)
             {

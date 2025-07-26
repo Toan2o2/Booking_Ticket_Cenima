@@ -7,6 +7,7 @@ namespace BookingTicketSysten.Services.VoteServices
 {
     public interface IVoteService
     {
+        Task<bool> HasWatchedMovieAsync(int userId, int movieId);
         Task<VoteDto> CreateOrUpdateVoteAsync(VoteCreateUpdateDto dto);
         Task<IEnumerable<VoteDto>> GetVotesByMovieAsync(int movieId);
         Task<VoteDto?> GetVoteByUserAndMovieAsync(int userId, int movieId);

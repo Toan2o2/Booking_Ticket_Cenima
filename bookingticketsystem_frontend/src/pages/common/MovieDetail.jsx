@@ -47,6 +47,10 @@ const MovieDetail = () => {
   const [commentPageSize] = useState(10);
   const [userHasVoted, setUserHasVoted] = useState(false);
 
+  // State cho quyền đánh giá/bình luận
+  const [hasVotePermission, setHasVotePermission] = useState(false);
+  const [hasCommentPermission, setHasCommentPermission] = useState(false);
+
   // State cho lịch chiếu
   const [shows, setShows] = useState([]);
   const [showsLoading, setShowsLoading] = useState(false);
@@ -68,6 +72,7 @@ const MovieDetail = () => {
     if (user && movieId) {
       checkFavoriteStatus();
       loadUserVote();
+      checkPermissions();
     }
   }, [user, movieId]);
 
@@ -171,6 +176,11 @@ const MovieDetail = () => {
       return;
     }
 
+    if (!hasCommentPermission) {
+      Toast.warning('Bạn cần đặt và xem phim trước khi bình luận!');
+      return;
+    }
+
     if (!commentValue.trim()) {
       message.warning("Vui lòng nhập nội dung bình luận!");
       return;
@@ -219,7 +229,11 @@ const MovieDetail = () => {
     } catch (error) {
       console.error('Comment error details:', error);
       console.error('Error response:', error.response);
-      Toast.error('Không thể gửi bình luận: ' + error.message);
+      if (error.message.includes('Bạn cần đặt và xem phim')) {
+        Toast.warning('Bạn cần đặt và xem phim trước khi bình luận!');
+      } else {
+        Toast.error('Không thể gửi bình luận: ' + error.message);
+      }
     } finally {
       setCommentLoading(false);
     }
@@ -228,6 +242,11 @@ const MovieDetail = () => {
   const handleVote = async () => {
     if (!user) {
       message.warning('Vui lòng đăng nhập để đánh giá!');
+      return;
+    }
+
+    if (!hasVotePermission) {
+      Toast.warning('Bạn cần đặt và xem phim trước khi đánh giá!');
       return;
     }
 
@@ -260,13 +279,15 @@ const MovieDetail = () => {
       Toast.success(userHasVoted ? "Cập nhật đánh giá thành công!" : "Đánh giá thành công!");
       
       // Tải lại danh sách phim để cập nhật rating ở các trang khác
-      setTimeout(() => {
-        movieService.getAll();
-      }, 1000);
+      loadAllMovies();
     } catch (error) {
       console.error('Vote error details:', error);
       console.error('Error response:', error.response);
-      Toast.error('Không thể đánh giá: ' + error.message);
+      if (error.message.includes('Bạn cần đặt và xem phim')) {
+        Toast.warning('Bạn cần đặt và xem phim trước khi đánh giá!');
+      } else {
+        Toast.error('Không thể đánh giá: ' + error.message);
+      }
     } finally {
       setVoteLoading(false);
     }
@@ -311,6 +332,25 @@ const MovieDetail = () => {
   // Xử lý khi ảnh bị lỗi
   const handleImageError = () => {
     setPosterError(true);
+  };
+
+  // Thêm function kiểm tra quyền
+  const checkPermissions = async () => {
+    if (!user) return;
+    
+    try {
+      const [votePerm, commentPerm] = await Promise.all([
+        voteService.checkPermission(movieId),
+        commentService.checkPermission(movieId)
+      ]);
+      
+      setHasVotePermission(votePerm);
+      setHasCommentPermission(commentPerm);
+    } catch (error) {
+      console.error('Error checking permissions:', error);
+      setHasVotePermission(false);
+      setHasCommentPermission(false);
+    }
   };
 
   if (loading) {
@@ -528,12 +568,30 @@ const MovieDetail = () => {
           {/* Form đánh giá và bình luận */}
           {user ? (
             <div style={{ marginBottom: 24, padding: 16, border: '1px solid #d9d9d9', borderRadius: 8, width: '100%' }}>
+              {/* Hiển thị message thông báo nếu không có quyền */}
+              {(!hasVotePermission || !hasCommentPermission) && (
+                <div style={{ 
+                  marginBottom: 16, 
+                  padding: 12, 
+                  backgroundColor: '#fff7e6', 
+                  border: '1px solid #ffd591', 
+                  borderRadius: 6,
+                  color: '#d46b08'
+                }}>
+                  <strong>Lưu ý:</strong> Bạn cần đặt và xem phim trước khi đánh giá và bình luận.
+                </div>
+              )}
+
               <Title level={5}>Đánh giá của bạn</Title>
               {/* Đánh giá sao */}
               <div style={{ marginBottom: 16 }}>
                 <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 8 }}>
                   <span>Đánh giá:</span>
-                  <Rate value={ratingValue} onChange={setRatingValue} />
+                  <Rate 
+                    disabled={!hasVotePermission} 
+                    value={ratingValue} 
+                    onChange={setRatingValue} 
+                  />
                   <span style={{ color: '#666' }}>({ratingValue}/5)</span>
                 </div>
                 <Button 
@@ -541,9 +599,9 @@ const MovieDetail = () => {
                   size="small" 
                   onClick={handleVote}
                   loading={voteLoading}
-                  disabled={ratingValue === 0}
+                  disabled={!hasVotePermission || ratingValue === 0}
                 >
-                  {userHasVoted ? "Cập nhật đánh giá" : "Gửi đánh giá"}
+                  {hasVotePermission ? (userHasVoted ? "Cập nhật đánh giá" : "Gửi đánh giá") : "Cần xem phim trước"}
                 </Button>
               </div>
               {/* Bình luận */}
@@ -553,36 +611,35 @@ const MovieDetail = () => {
                 </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                   <Input.TextArea
+                    disabled={!hasCommentPermission}
                     value={commentValue}
                     onChange={e => setCommentValue(e.target.value)}
-                    placeholder="Chia sẻ cảm nhận của bạn về phim này..."
+                    placeholder={hasCommentPermission ? "Chia sẻ cảm nhận của bạn về phim này..." : "Bạn cần xem phim trước khi bình luận"}
                     autoSize={{ minRows: 2, maxRows: 4 }}
                     style={{ flex: 1 }}
-                    maxLength={500}
-                    showCount
                   />
                   <Button 
                     type="primary" 
                     onClick={handleComment}
                     loading={commentLoading}
-                    disabled={!commentValue.trim()}
+                    disabled={!hasCommentPermission || !commentValue.trim()}
                   >
-                    Gửi
+                    {hasCommentPermission ? "Gửi bình luận" : "Cần xem phim trước"}
                   </Button>
-                </div>
-                <div style={{ marginTop: 8, fontSize: 12, color: '#666' }}>
-                  Lưu ý: Bình luận sẽ được kiểm duyệt trước khi hiển thị công khai.
                 </div>
               </div>
             </div>
           ) : (
-            <div style={{ marginBottom: 24, padding: 16, backgroundColor: '#fff7e6', border: '1px solid #ffd591', borderRadius: 8, width: '100%' }}>
-              <div style={{ color: '#d48806', marginBottom: 8 }}>
-                <b>Đăng nhập để đánh giá và bình luận về phim này</b>
-              </div>
-              <Button type="primary" onClick={() => navigate('/login')}>
-                Đăng nhập ngay
-              </Button>
+            <div style={{ 
+              marginBottom: 24, 
+              padding: 16, 
+              backgroundColor: '#f6ffed', 
+              border: '1px solid #b7eb8f', 
+              borderRadius: 8, 
+              textAlign: 'center',
+              color: '#52c41a'
+            }}>
+              <strong>Đăng nhập để đánh giá và bình luận phim này!</strong>
             </div>
           )}
 

@@ -25,6 +25,15 @@ class VoteService {
     );
   }
 
+  async checkPermission(movieId) {
+    try {
+      const response = await this.api.get(`/check-permission/${movieId}`);
+      return response.data.hasPermission;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Tạo hoặc cập nhật đánh giá
   async createOrUpdate(voteData) {
     try {

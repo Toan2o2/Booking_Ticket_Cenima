@@ -25,6 +25,15 @@ class CommentService {
     );
   }
 
+  async checkPermission(movieId) {
+    try {
+      const response = await this.api.get(`/check-permission/${movieId}`);
+      return response.data.hasPermission;
+    } catch (error) {
+      throw this.handleError(error);
+    }
+  }
+
   // Tạo bình luận mới
   async create(commentData) {
     try {

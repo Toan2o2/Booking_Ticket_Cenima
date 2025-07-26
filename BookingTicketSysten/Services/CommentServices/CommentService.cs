@@ -15,8 +15,29 @@ namespace BookingTicketSysten.Services.CommentServices
         {
             _context = context;
         }
+
+        // Thêm method kiểm tra quyền bình luận
+        public async Task<bool> HasWatchedMovieAsync(int userId, int movieId)
+        {
+            var booking = await _context.Bookings
+                .Include(b => b.Show)
+                .Where(b => b.UserId == userId && 
+                           b.Show.MovieId == movieId && 
+                           b.Status == "Confirmed")
+                .FirstOrDefaultAsync();
+            
+            return booking != null;
+        }
+
         public async Task<CommentDto> AddCommentAsync(CommentCreateDto dto)
         {
+            // Kiểm tra quyền trước
+            var hasWatched = await HasWatchedMovieAsync(dto.UserId, dto.MovieId);
+            if (!hasWatched)
+            {
+                throw new InvalidOperationException("Bạn cần đặt và xem phim trước khi bình luận.");
+            }
+
             int? parentCommentId = null;
             if (dto.ParentCommentId.HasValue)
             {
