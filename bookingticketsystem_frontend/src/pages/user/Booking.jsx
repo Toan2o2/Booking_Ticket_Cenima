@@ -398,27 +398,32 @@ const Booking = () => {
                       {row[0]?.rowNumber}
                     </span>
                 {row.map((seat) => {
-                      const isBooked = seatAvailability.bookedSeatIds.includes(seat.seatId);
-                      const isSelected = selectedSeats.find(s => s.seatId === seat.seatId);
+                  const isBooked = seatAvailability.bookedSeatIds.includes(seat.seatId);
+                  const isSelected = selectedSeats.find(s => s.seatId === seat.seatId);
+                  // Hiển thị tiền tố V cho ghế VIP
+                  let seatLabel = seat.columnNumber;
+                  if (seat.seatType && seat.seatType.toLowerCase() === 'vip') {
+                    seatLabel = `V${seat.columnNumber}`;
+                  }
                   return (
                     <Button
-                          key={seat.seatId}
+                      key={seat.seatId}
                       type={isSelected ? "primary" : "default"}
                       disabled={isBooked}
-                          style={{ 
-                            marginRight: 4, 
-                            marginBottom: 4, 
-                            width: 48,
-                            height: 40,
-                            fontSize: 12,
-                            backgroundColor: isBooked ? '#ff4d4f' : isSelected ? '#1890ff' : '#fff',
-                            color: isBooked ? '#fff' : isSelected ? '#fff' : '#222',
-                            borderColor: isBooked ? '#ff4d4f' : isSelected ? '#1890ff' : '#d9d9d9',
-                            cursor: isBooked ? 'not-allowed' : 'pointer'
-                          }}
+                      style={{ 
+                        marginRight: 4, 
+                        marginBottom: 4, 
+                        width: 48,
+                        height: 40,
+                        fontSize: 12,
+                        backgroundColor: isBooked ? '#ff4d4f' : isSelected ? '#1890ff' : '#fff',
+                        color: isBooked ? '#fff' : isSelected ? '#fff' : '#222',
+                        borderColor: isBooked ? '#ff4d4f' : isSelected ? '#1890ff' : '#d9d9d9',
+                        cursor: isBooked ? 'not-allowed' : 'pointer'
+                      }}
                       onClick={() => handleSelectSeat(seat)}
                     >
-                          {seat.columnNumber}
+                      {seatLabel}
                     </Button>
                   );
                 })}

@@ -137,11 +137,6 @@ const Login = () => {
           />
         </div>
       </GoogleOAuthProvider>
-      <div style={{ marginTop: 16, color: '#888', fontSize: 13 }}>
-        <b>Tài khoản demo:</b><br/>
-        User: user@gmail.com / 123456<br/>
-        Admin: admin@gmail.com / 123456
-      </div>
     </Card>
   );
 };
